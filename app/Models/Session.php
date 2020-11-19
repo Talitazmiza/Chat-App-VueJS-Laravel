@@ -7,5 +7,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class Session extends Model
 {
-    use HasFactory;
+    
+	public function chats()
+	{
+		return $this->hasManyThrough(Chat::class, Message::class);
+	}
+
+	public function message() 
+	{
+		return $this->hasMany(Message::class);
+	}
+
 }
