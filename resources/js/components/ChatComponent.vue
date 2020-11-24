@@ -6,13 +6,23 @@
                     <div class="card-header">
                         Private Chat App
                     </div>
-                    <ul class="list-group">
-                            <li class="list-group-item">Lili Marceuli</li>
-                    </ul>
+                  <ul class="list-group">
+                    <a href="" v-for="friend in friends" :key="friend.id" @click.prevent="openChat(friend)">
+                      <li class="list-group-item" >
+                        {{ friend.name}}
+                      </li>
+                    </a>
+                  </ul>
                 </div>
             </div>
             <div class="col-md-9">
-                <message-component></message-component>
+                <span v-for="friend in friends" :key="friend.id" v-if="friend.session">
+                <message-component
+                    v-if="friend.session.open"
+                    @close="close(friend)"
+                    :friend=friend
+                ></message-component>
+            </span>
             </div>
         </div>
     </div>
@@ -21,7 +31,46 @@
 <script>
     import MessageComponent from "./MessageComponent";
     export default {
-        components:{MessageComponent},
+        data(){
+          return {
+            open : true,
+            friends : []
+          }
+        },
+        methods : {
+          close(friend){
+            friend.session.open = false;
+          },
+          getFriends() {
+            axios.get('/getFriends').then(res => {
+              this.friends = res.data.data;
+            })
+          },
+          openChat(friend){
+            if(friend.session) {
+              this.friends.forEach(friend => {
+                friend.session.open = false;
+              })
+              friend.session.open = true;
+            }
+            else {
+              this.createSession(friend);
+            }
+          },
+          createSession(friend){
+            axios.post('/session/create', {friend_id:friend.id}).then(
+                res => {
+                  (friend.session = res.data.data),
+                      (friend.session.open = true)
+                }
+            );
+          },
+        },
+          created() {
+            this.getFriends();
+          },
+
+          components:{MessageComponent},
         mounted() {
             console.log('Component mounted.')
         }
