@@ -11,7 +11,10 @@
                           v-for="friend in friends"
                           :key=friend.id
                           @click.prevent="openChat(friend)">
-                          <a href="">{{ friend.name}}</a>
+                          <a href="">
+                              {{ friend.name}}
+                              <span class="text-danger" v-if="friend.session && (friend.session.unreadCount > 0 )">{{friend.session.unreadCount}}</span>
+                          </a>
                           <i class="fa fa-circle float-right text-success"
                              v-if="friend.online"
                              aria-hidden="true">
@@ -49,7 +52,10 @@
           getFriends() {
             axios.get('/getFriends').then(res => {
               this.friends = res.data.data;
-            })
+              // this.friends.forEach(
+              //     friend => (friend.session ? this.listenForEverySession(friend) : "");
+              // );
+            });
           },
           openChat(friend){
             if(friend.session) {
@@ -57,6 +63,7 @@
                   friend => (friend.session ? (friend.session.open = false) : "")
               );
                 friend.session.open = true;
+                friend.session.unreadCount = 0;
             }
             else {
               this.createSession(friend);
@@ -67,12 +74,27 @@
                 res => {
                   (friend.session = res.data.data),
                       (friend.session.open = true)
-                }
-            );
-          },
+                });
+            },
+           // listenForEverySession(friend) {
+           //     Echo.private(`Chat.${friend.session.id}`).listen(
+           //         "PrivateChatEvent",
+           //         e => (friend.session.open ? "" : friend.session.unreadCount++)
+           //     );
+           // }
         },
           created() {
             this.getFriends()
+              Echo.channel("Chat").listen("SessionEvent", e => {
+                 let friend = this.friends.find(friend => friend.id == e.session_by);
+                 friend.session = e.session;
+                 //this.listenForEverySession(friend);
+              });
+
+
+
+
+
              Echo.join(`Chat`)
              .here((users) => {
                 this.friends.forEach(friend => {
