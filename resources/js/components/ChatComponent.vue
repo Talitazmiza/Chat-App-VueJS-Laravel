@@ -7,11 +7,16 @@
                         Private Chat App
                     </div>
                   <ul class="list-group">
-                    <a href="" v-for="friend in friends" :key="friend.id" @click.prevent="openChat(friend)">
-                      <li class="list-group-item" >
-                        {{ friend.name}}
+                      <li class="list-group-item"
+                          v-for="friend in friends"
+                          :key=friend.id
+                          @click.prevent="openChat(friend)">
+                          <a href="">{{ friend.name}}</a>
+                          <i class="fa fa-circle float-right text-success"
+                             v-if="friend.online"
+                             aria-hidden="true">
+                          </i>
                       </li>
-                    </a>
                   </ul>
                 </div>
             </div>
@@ -48,10 +53,10 @@
           },
           openChat(friend){
             if(friend.session) {
-              this.friends.forEach(friend => {
-                friend.session.open = false;
-              })
-              friend.session.open = true;
+              this.friends.forEach(
+                  friend => (friend.session ? (friend.session.open = false) : "")
+              );
+                friend.session.open = true;
             }
             else {
               this.createSession(friend);
@@ -67,18 +72,24 @@
           },
         },
           created() {
-            this.getFriends();
-
-            // Echo.join(`Chat`)
-            // .here((users) => {
-            //   this.friends.forEach(friend => {
-            //     users.forEach(user => {
-            //       if(user.id == friend.id) {
-            //         friend.online == true
-            //       }
-            //     })
-            //   })
-            // });
+            this.getFriends()
+             Echo.join(`Chat`)
+             .here((users) => {
+                this.friends.forEach(friend => {
+                 users.forEach(user => {
+                     if(user.id == friend.id) {
+                     friend.online = true
+                   }
+                 })
+               })
+               console.log(users)
+             })
+             .joining((user) => {
+                this.friends.forEach(friend => user.id == friend.id? friend.online = true:'')
+             })
+             .leaving((user) => {
+                 this.friends.forEach(friend => user.id == friend.id? friend.online = false:'')
+             });
           },
 
           components:{MessageComponent},

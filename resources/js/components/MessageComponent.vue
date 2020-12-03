@@ -21,13 +21,13 @@
         </div>
       </div>
         <div class="card-body" v-chat-scroll>
-            <p class="card-text" v-for="chat in chats" :key="chat.message">
+            <p class="card-text" :class="{'text-right':chat.type == 0}" v-for="chat in chats" :key="chat.message">
                 {{chat.message}}
             </p>
         </div>
         <form class="card-footer" @submit.prevent="send">
             <div class="form-group">
-                <input type="text" :disabled="session_blocked" class="form-control" placeholder="Write an message">
+                <input type="text" :disabled="session_blocked" class="form-control" placeholder="Write an message" v-model="message">
             </div>
         </form>
     </div>
@@ -39,12 +39,23 @@
         data() {
             return {
                 chats: [],
+                message: null,
                 session_blocked : false,
             }
         },
         methods: {
             send() {
-                console.log("yeea");
+                if(this.message) {
+                    this.pushToChats(this.message);
+                    axios.post(`/send/${this.friend.session.id}`, {
+                        isi: this.message,
+                        to_user: this.friend.id
+                    });
+                    this.message = null;
+                }
+            },
+            pushToChats(message) {
+                this.chats.push({message: message, type:0, sent_at:"Just Now"});
             },
             close(){
               this.$emit('close')
@@ -57,16 +68,18 @@
             },
             unblock(){
               this.session_blocked = false
+            },
+            getAllMessages(){
+                axios
+                    .post(`/session/${this.friend.session.id}/chats`)
+                    .then(res => (this.chats = res.data.data));
             }
 
         },
         created(){
-            this.chats.push(
-                {message: 'werrrrrrrrr r u'},
-                {message: 'bottom'}
-            )
+            this.getAllMessages();
         }
-    }
+    };
 </script>
 
 <style>
