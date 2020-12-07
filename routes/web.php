@@ -21,3 +21,4 @@ Route::get('/getFriends', [HomeController::class, 'getFriends']);
 Route::post('/session/create', [SessionController::class, 'create']);
 Route::post('/send/{session}', [ChatController::class, 'send']);
 Route::post('/session/{session}/chats', [ChatController::class, 'chats']);
+Route::post('/session/{session}/read}'. [ChatController::class, 'read']);
