@@ -9,6 +9,10 @@ class Chat extends Model
 {
     protected $guarded = [];
 
+    protected $casts = [
+        'read_at' => 'dateTime'
+    ];
+
     public function message()
     {
     	return $this->belongsTo(Message::class);
