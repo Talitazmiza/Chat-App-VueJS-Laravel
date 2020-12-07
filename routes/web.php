@@ -22,3 +22,4 @@ Route::post('/session/create', [SessionController::class, 'create']);
 Route::post('/send/{session}', [ChatController::class, 'send']);
 Route::post('/session/{session}/chats', [ChatController::class, 'chats']);
 Route::post('/session/{session}/read', [ChatController::class, 'read']);
+Route::post('/session/{session}/clear', [ChatController::class, 'clear']);

@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Session extends Model
 {
-    protected $guarded = [];
+	protected $guarded = [];
+	
 	public function chats()
 	{
 		return $this->hasManyThrough(Chat::class, Message::class);
@@ -16,6 +17,16 @@ class Session extends Model
 	public function message() 
 	{
 		return $this->hasMany(Message::class);
+	}
+
+	public function deleteChats() 
+	{
+		$this->chats()->where('user_id', auth()->id())->delete();
+	}
+
+	public function deleteMessages() 
+	{
+		$this->messages()->delete();
 	}
 
 }
