@@ -1939,6 +1939,14 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
 
 /* harmony default export */ __webpack_exports__["default"] = ({
   data: function data() {
@@ -1955,15 +1963,18 @@ __webpack_require__.r(__webpack_exports__);
       var _this = this;
 
       axios.get('/getFriends').then(function (res) {
-        _this.friends = res.data.data;
+        _this.friends = res.data.data; // this.friends.forEach(
+        //     friend => (friend.session ? this.listenForEverySession(friend) : "");
+        // );
       });
     },
     openChat: function openChat(friend) {
       if (friend.session) {
         this.friends.forEach(function (friend) {
-          friend.session.open = false;
+          return friend.session ? friend.session.open = false : "";
         });
         friend.session.open = true;
+        friend.session.unreadCount = 0;
       } else {
         this.createSession(friend);
       }
@@ -1974,19 +1985,44 @@ __webpack_require__.r(__webpack_exports__);
       }).then(function (res) {
         friend.session = res.data.data, friend.session.open = true;
       });
-    }
+    } // listenForEverySession(friend) {
+    //     Echo.private(`Chat.${friend.session.id}`).listen(
+    //         "PrivateChatEvent",
+    //         e => (friend.session.open ? "" : friend.session.unreadCount++)
+    //     );
+    // }
+
   },
   created: function created() {
-    this.getFriends(); // Echo.join(`Chat`)
-    // .here((users) => {
-    //   this.friends.forEach(friend => {
-    //     users.forEach(user => {
-    //       if(user.id == friend.id) {
-    //         friend.online == true
-    //       }
-    //     })
-    //   })
-    // });
+    var _this2 = this;
+
+    this.getFriends();
+    Echo.channel("Chat").listen("SessionEvent", function (e) {
+      var friend = _this2.friends.find(function (friend) {
+        return friend.id == e.session_by;
+      });
+
+      friend.session = e.session; //this.listenForEverySession(friend);
+    });
+    Echo.join("Chat").here(function (users) {
+      _this2.friends.forEach(function (friend) {
+        users.forEach(function (user) {
+          if (user.id == friend.id) {
+            friend.online = true;
+          }
+        });
+      });
+
+      console.log(users);
+    }).joining(function (user) {
+      _this2.friends.forEach(function (friend) {
+        return user.id == friend.id ? friend.online = true : '';
+      });
+    }).leaving(function (user) {
+      _this2.friends.forEach(function (friend) {
+        return user.id == friend.id ? friend.online = false : '';
+      });
+    });
   },
   components: {
     MessageComponent: _MessageComponent__WEBPACK_IMPORTED_MODULE_0__["default"]
@@ -2047,12 +2083,27 @@ __webpack_require__.r(__webpack_exports__);
   data: function data() {
     return {
       chats: [],
+      message: null,
       session_blocked: false
     };
   },
   methods: {
     send: function send() {
-      console.log("yeea");
+      if (this.message) {
+        this.pushToChats(this.message);
+        axios.post("/send/".concat(this.friend.session.id), {
+          isi: this.message,
+          to_user: this.friend.id
+        });
+        this.message = null;
+      }
+    },
+    pushToChats: function pushToChats(message) {
+      this.chats.push({
+        message: message,
+        type: 0,
+        sent_at: "Just Now"
+      });
     },
     close: function close() {
       this.$emit('close');
@@ -2065,14 +2116,26 @@ __webpack_require__.r(__webpack_exports__);
     },
     unblock: function unblock() {
       this.session_blocked = false;
-    }
+    },
+    getAllMessages: function getAllMessages() {
+      var _this = this;
+
+      axios.post("/session/".concat(this.friend.session.id, "/chats")).then(function (res) {
+        return _this.chats = res.data.data;
+      });
+    } // read() {
+    //     axios.post(`/session/${this.friend.session.id}/read`);
+    // }
+
   },
   created: function created() {
-    this.chats.push({
-      message: 'werrrrrrrrr r u'
-    }, {
-      message: 'bottom'
-    });
+    //this.read();
+    this.getAllMessages(); // Echo.private(`Chat.${this.friend.session.id}`).listen(
+    //     "PrivateChatEvent",
+    //     e => {
+    //         this.read();
+    //         this.chats.push({message: e.content, type:1, sent_at:"Just Now"});
+    // });
   }
 });
 
@@ -44522,10 +44585,10 @@ var render = function() {
             { staticClass: "list-group" },
             _vm._l(_vm.friends, function(friend) {
               return _c(
-                "a",
+                "li",
                 {
                   key: friend.id,
-                  attrs: { href: "" },
+                  staticClass: "list-group-item",
                   on: {
                     click: function($event) {
                       $event.preventDefault()
@@ -44534,13 +44597,25 @@ var render = function() {
                   }
                 },
                 [
-                  _c("li", { staticClass: "list-group-item" }, [
+                  _c("a", { attrs: { href: "" } }, [
                     _vm._v(
-                      "\n                    " +
+                      "\n                          " +
                         _vm._s(friend.name) +
-                        "\n                  "
-                    )
-                  ])
+                        "\n                          "
+                    ),
+                    friend.session && friend.session.unreadCount > 0
+                      ? _c("span", { staticClass: "text-danger" }, [
+                          _vm._v(_vm._s(friend.session.unreadCount))
+                        ])
+                      : _vm._e()
+                  ]),
+                  _vm._v(" "),
+                  friend.online
+                    ? _c("i", {
+                        staticClass: "fa fa-circle float-right text-success",
+                        attrs: { "aria-hidden": "true" }
+                      })
+                    : _vm._e()
                 ]
               )
             }),
@@ -44692,9 +44767,15 @@ var render = function() {
         staticClass: "card-body"
       },
       _vm._l(_vm.chats, function(chat) {
-        return _c("p", { key: chat.message, staticClass: "card-text" }, [
-          _vm._v("\n            " + _vm._s(chat.message) + "\n        ")
-        ])
+        return _c(
+          "p",
+          {
+            key: chat.message,
+            staticClass: "card-text",
+            class: { "text-right": chat.type == 0 }
+          },
+          [_vm._v("\n            " + _vm._s(chat.message) + "\n        ")]
+        )
       }),
       0
     ),
@@ -44713,11 +44794,28 @@ var render = function() {
       [
         _c("div", { staticClass: "form-group" }, [
           _c("input", {
+            directives: [
+              {
+                name: "model",
+                rawName: "v-model",
+                value: _vm.message,
+                expression: "message"
+              }
+            ],
             staticClass: "form-control",
             attrs: {
               type: "text",
               disabled: _vm.session_blocked,
               placeholder: "Write an message"
+            },
+            domProps: { value: _vm.message },
+            on: {
+              input: function($event) {
+                if ($event.target.composing) {
+                  return
+                }
+                _vm.message = $event.target.value
+              }
             }
           })
         ])
@@ -56972,11 +57070,12 @@ window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 window.Pusher = __webpack_require__(/*! pusher-js */ "./node_modules/pusher-js/dist/web/pusher.js");
 window.Echo = new laravel_echo__WEBPACK_IMPORTED_MODULE_0__["default"]({
   broadcaster: 'pusher',
-  key: "",
-  // key: "9a5d638e21c0e3b3f594",
-  cluster: "mt1",
-  // cluster: "ap1",
-  forceTLS: true
+  //key: process.env.MIX_PUSHER_APP_KEY,
+  key: "9a5d638e21c0e3b3f594",
+  //cluster: process.env.MIX_PUSHER_APP_CLUSTER,
+  cluster: "ap1",
+  encryted: true //forceTLS: true
+
 });
 
 /***/ }),

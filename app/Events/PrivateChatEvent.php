@@ -10,22 +10,21 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class SessionEvent implements ShouldBroadcast
+class PrivateChatEvent implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $session;
-    public $session_by;
-
+    public $content;
+    public $chat;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($session, $session_by)
-    {
-        $this->session = $session;
-        $this->session_by = $session_by;
+    public function __construct($content, $chat)
+    {   
+        $this->content = $content;
+        $this->chat = $chat;
         $this->dontBroadcastToCurrentUser();
     }
 
@@ -36,6 +35,6 @@ class SessionEvent implements ShouldBroadcast
      */
     public function broadcastOn()
     {
-        return new Channel('Chat');
+        return new PrivateChannel('Chat' . $this->chat['session_id']);
     }
 }
