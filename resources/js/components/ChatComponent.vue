@@ -52,9 +52,9 @@
           getFriends() {
             axios.get('/getFriends').then(res => {
               this.friends = res.data.data;
-              // this.friends.forEach(
-              //     friend => (friend.session ? this.listenForEverySession(friend) : "");
-              // );
+              this.friends.forEach(
+                  friend => (friend.session ? this.listenForEverySession(friend) : "")
+              )
             });
           },
           openChat(friend){
@@ -76,24 +76,20 @@
                       (friend.session.open = true)
                 });
             },
-           // listenForEverySession(friend) {
-           //     Echo.private(`Chat.${friend.session.id}`).listen(
-           //         "PrivateChatEvent",
-           //         e => (friend.session.open ? "" : friend.session.unreadCount++)
-           //     );
-           // }
+           listenForEverySession(friend) {
+               Echo.private(`Chat.${friend.session.id}`).listen(
+                   "PrivateChatEvent",
+                   e => (friend.session.open ? "" : friend.session.unreadCount++)
+               );
+           }
         },
           created() {
             this.getFriends()
               Echo.channel("Chat").listen("SessionEvent", e => {
                  let friend = this.friends.find(friend => friend.id == e.session_by);
                  friend.session = e.session;
-                 //this.listenForEverySession(friend);
+                 this.listenForEverySession(friend);
               });
-
-
-
-
 
              Echo.join(`Chat`)
              .here((users) => {
