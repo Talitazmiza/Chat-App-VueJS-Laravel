@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\BlockEvent;
+use App\Models\Session;
 use Illuminate\Http\Request;
 
 class BlockController extends Controller
