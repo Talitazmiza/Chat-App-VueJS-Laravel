@@ -34,6 +34,6 @@ class BlockEvent implements ShouldBroadcast
      */
     public function broadcastOn()
     {
-        return new PrivateChannel('Chat.', $this->session_id);
+        return new PrivateChannel('Chat.'.$this->session_id);
     }
 }
