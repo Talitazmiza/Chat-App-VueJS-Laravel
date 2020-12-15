@@ -39,6 +39,6 @@ window.Echo = new Echo({
     key: "9a5d638e21c0e3b3f594",
     //cluster: process.env.MIX_PUSHER_APP_CLUSTER,
     cluster: "ap1",
-    encryted: true,
+    encrypted: true,
     //forceTLS: true
 });
