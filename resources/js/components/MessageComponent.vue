@@ -1,9 +1,9 @@
 <template>
     <div class="card card-default chat-box">
       <div class="card-header">
-        <b :class="{'text-danger': session_blocked}">
+        <b :class="{'text-danger': session.blocked}">
           {{ friend.name }}
-          <span v-if="session.block">(Blocked)</span>
+          <span v-if="session.blocked">(Blocked)</span>
         </b>
 
         <a href="" @click.prevent="close" >
@@ -14,20 +14,20 @@
             <i class="fa fa-ellipsis-v"></i>
           </a>
           <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-            <a class="dropdown-item" href="" @click.prevent="unblock" v-if="session.block && can">Unblock</a>
-            <a class="dropdown-item" href="" @click.prevent="block" v-if="!session.block">Block</a>
+            <a class="dropdown-item" href="" @click.prevent="unblock" v-if="session.blocked && can">Unblock</a>
+            <a class="dropdown-item" href="" @click.prevent="block" v-if="!session.blocked">Block</a>
             <a class="dropdown-item" href=""  @click.prevent="clear">Clear Chat</a>
           </div>
         </div>
       </div>
         <div class="card-body" v-chat-scroll>
-            <p class="card-text" :class="{'text-right':chat.type == 0}" v-for="chat in chats" :key="chat.message">
+            <p class="card-text" :class="{'text-right':chat.type == 0,'text-success' :chat.read_at != null}" v-for="chat in chats" :key="chat.id">
                 {{chat.message}}
             </p>
         </div>
         <form class="card-footer" @submit.prevent="send">
             <div class="form-group">
-                <input type="text" :disabled="session_blocked" class="form-control" placeholder="Write an message" v-model="message">
+                <input type="text" :disabled="session.blocked" class="form-control" placeholder="Write an message" v-model="message">
             </div>
         </form>
     </div>
@@ -58,7 +58,8 @@
                     axios.post(`/send/${this.friend.session.id}`, {
                         isi: this.message,
                         to_user: this.friend.id
-                    });
+                    }).then(chat => {
+                      this.chats[this.chats.length -1].id = chat.data; });
                     this.message = null;
                 }
             },
@@ -69,14 +70,14 @@
               this.$emit('close')
             },
             clear(){
-              axios.post(`/session/${this.friend.session.id}/clear`).then(res => (this.session.blocked_by = authId));
+              axios.post(`/session/${this.friend.session.id}/clear`).then(res=>this.chats = []);
             },
             block(){
-              this.session.block = true;
-              axios.post(`/session/${this.friend.session.id}/block`).then(res => console.log(res));
+              this.session.blocked = true;
+              axios.post(`/session/${this.friend.session.id}/block`).then(res => this.session.blocked_by = authId);
             },
             unblock(){
-               this.session.block = false;
+               this.session.blocked = false;
               axios.post(`/session/${this.friend.session.id}/unblock`).then(res => (this.session.blocked_by = null));
             },
             getAllMessages(){
@@ -97,18 +98,21 @@
             Echo.private(`Chat.${this.friend.session.id}`).listen(
                 "PrivateChatEvent",
                 e => {
-                    this.read();
+                    this.friend.session.open ? this.read() : "";
                     this.chats.push({message: e.content, type:1, sent_at:"Just Now"});
             });
             Echo.private(`Chat.${this.friend.session.id}`).listen(
-                "MsgReadEvent", e => 
-                    this.chats.forEach(
-                      chat => (chat.id ==e.chat.id ? (chat.read_at = e.chat.read_at) : "")
-                    )
+                "MsgReadEvent", e => {
+                  this.chats.forEach(
+                      chat => ( chat.id == e.chat.id ? (chat.read_at = e.chat.read_at) : "")
+                  )
+                }
+
             );
             Echo.private(`Chat.${this.friend.session.id}`).listen(
-                "BlockEvent", e => 
-                    (this.session.block = e.Blocked)
+                "BlockEvent", e => {
+                  (this.session.blocked = e.blocked)
+                }
             );
         }
     };
