@@ -2,7 +2,7 @@
   <div class="card">
     <div class="card-header">
       <b :class="{'text-danger': session.blocked}">
-        {{friend.name}}
+        {{friend.name}} <span v-if="isTyping">is typing . . .</span>
         <span v-if="session.blocked">(Blocked)</span>
       </b>
 
@@ -40,6 +40,7 @@ export default {
     return {
       chats : [],
       message : null,
+      isTyping : false
     }
   },
   computed : {
@@ -47,7 +48,16 @@ export default {
       return this.friend.session;
     },
     can(){
-      return this.session.blocked_by == authId;
+      return this.session.blocked_by == auth.id;
+    }
+  },
+  watch : {
+    message(value) {
+      if (value) {
+        Echo.private(`Chat.${this.friend.session.id}`).whisper('typing', {
+                  name: auth.name
+          });
+      }
     }
   },
 
@@ -86,7 +96,7 @@ export default {
     },
     block(){
       this.session.blocked = true
-      axios.post(`/session/${this.friend.session.id}/block`).then(res => this.session.blocked_by = authId);
+      axios.post(`/session/${this.friend.session.id}/block`).then(res => this.session.blocked_by = auth.id);
     },
     unblock(){
       this.session.blocked = false
@@ -121,8 +131,17 @@ export default {
           this.session.blocked = e.blocked;
         }
     );
+    Echo.private(`Chat.${this.friend.session.id}`).listenForWhisper(
+        "typing",
+        e => {
+          this.isTyping = true;
+          setTimeout(() => {
+            this.isTyping = false;
+          }, 2000);
+        }
+    );
   }
-}
+};
 </script>
 <style>
 .chat-box {
